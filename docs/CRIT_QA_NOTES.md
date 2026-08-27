@@ -12,7 +12,7 @@ Status legend: ⬜ not started · 🔶 in progress / partially verified · ✅ v
 | # | Spec item (from `CRIT_BRIEF.md`) | Implementation status | Verification method | Result |
 |---|---|---|---|---|
 | 1 | Deployed live at a public GitHub Pages URL by the cutoff | ⬜ not started | CI deploy + visit deployed URL | not yet run |
-| 2 | Losable: a wrong move must be possible, and play must end (win/loss/finish) | ⬜ not started (see `CONTENT_SOURCE.md` §"Win / loss / finish" — lives system proposed, needs confirmation) | manual playthrough to an ending | not yet run |
+| 2 | Losable: a wrong move must be possible, and play must end (win/loss/finish) | ⬜ not started (design settled in `CONTENT_SOURCE.md` §"Win / loss / finish" — 3 lives / loss, 15 kills / win, both tunable) | manual playthrough to an ending | not yet run |
 | 3 | Self-teaching: zero instructions anywhere; opening screen invites the first move | ⬜ not started | manual: fresh load, no prior context, first move attempted cold | not yet run |
 | 4 | A stranger can reach an ending within 5 minutes | ⬜ not started | manual playtest, timed | not yet run |
 | 5 | One rule under a focused automated test, **and** one change traced to actual play | ⬜ not started | `pnpm check` output + a documented before/after change below | not yet run |
@@ -49,9 +49,14 @@ made in response. Empty until a playable build exists.
 
 ## Known issues / open questions
 
-- Fire control mechanism not yet decided — see `CONTENT_SOURCE.md` §"Decisions
-  requiring confirmation" item 1.
-- Lives count / win condition not yet decided — item 2–3 in the same section.
+- Lives (3) and win threshold (15 kills) are settled but explicitly marked as
+  **initial, tunable** numbers in `CONTENT_SOURCE.md` — the first real
+  playtest should confirm or adjust them, and that adjustment is the
+  intended candidate for spec item 5's "change traced to actual play" (see
+  section below once it happens).
+- All design decisions in `CONTENT_SOURCE.md` §"Decisions requiring
+  confirmation" are now resolved (fire control, lives, win condition, key
+  scheme, HUD). None remain open pending user input.
 - Whether keyboard-only controls need any on-screen affordance change for the
   390×844 phone viewport (root `CLAUDE.md` requires keyboard reachability,
   not touch support, but a phone visitor with no keyboard attached may not be

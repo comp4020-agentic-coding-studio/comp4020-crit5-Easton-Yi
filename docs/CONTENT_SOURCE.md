@@ -32,7 +32,7 @@ source project.
 | Wall fill | `#232323` | |
 | Wall edge | `#232323` | 2px outline, same tone |
 | HUD text | `#191919` | |
-| State/status text | `#AA2828` | (source-only debug label; see notes) |
+| State/status text | `#AA2828` | source-only debug label color; **not ported** — the HUD line it was used for is dropped (see "No-tutorial / affordance plan" → HUD) |
 | Explosion ring | `#EB8C1E` | orange, drawn as a growing unfilled circle |
 | Explosion core | `#C81E1E` | red filled circle, shrinks relative to ring |
 
@@ -54,11 +54,11 @@ source project.
   enemy AI's blind-fire behavior (see below) and should be kept.
 - **Explosion:** on a hit, an expanding orange ring plus a shrinking red core,
   over `EXPLODE_DURATION = 0.6s`, in place of the tank sprite.
-- **HUD:** plain top-left text stack — HP, kill count, death count, current
-  AI state label, difficulty %. The state-label line was a *debug* readout
-  for the algorithm demo (it showed what the FSM was doing); it has no
-  meaning once a human drives the tank and should be dropped or repurposed
-  (see notes below), not ported as-is.
+- **HUD — not a direct port; see "Settled" below.** The source's plain
+  top-left text stack (HP, kill count, death count, current AI state label,
+  difficulty %) doesn't carry over as-is: the state-label line was a
+  *debug* readout for the algorithm demo (it showed what the FSM was
+  doing), and has no meaning once a human drives the tank.
 - **Scale:** everything spatial multiplies by a single `SCALE = 1.2` constant
   — worth carrying over as a pattern (one scale knob, not scattered magic
   numbers) even though the marking viewports (1920×1080 / 390×844) differ
@@ -74,8 +74,12 @@ model the source already encodes in `Tank._turn_toward` / `Tank._move_forward`
 — a tank can only rotate in place or drive forward along its current heading,
 never strafe or snap to an arbitrary direction:
 
-- **Direction keys** (arrow keys and/or WASD — implementation's choice,
-  affordance must make it discoverable without labels):
+- **Direction keys: both arrow keys and WASD, mapped to the same four turn
+  intents simultaneously.** No on-screen hint can tell a stranger which
+  convention this game uses, and the two conventions split player muscle
+  memory roughly evenly — supporting both costs nothing to implement (map
+  both to the same four intents) and removes a coin-flip guess the
+  no-tutorial constraint would otherwise force on the player.
   - Pressing a direction that **differs from the tank's current heading**
     turns the tank toward that heading (rotate in place, at a turn rate
     analogous to `TANK_TURN_SPEED`). It does not move while turning.
@@ -88,7 +92,11 @@ never strafe or snap to an arbitrary direction:
     change goes through a turn first, exactly like the source's player FSM
     already enforced for itself.
 - **Firing is manual, not automatic** (the source player fired autonomously;
-  this crit does not). Fire control: **left mouse click, or the `F` key**.
+  this crit does not). Fire control: **left mouse click, or the spacebar**.
+  Spacebar over `F`: click needs no convention at all, and spacebar is the
+  much more established browser/arcade-game fire key than `F` (which more
+  commonly means "interact/use" in other genres) — a stranger relying on
+  keyboard alone is more likely to try space unprompted.
   Each press fires one shot in the tank's current heading, subject to a
   cooldown analogous to the source's rate limiting
   (`PLAYER_FIRE_COOLDOWN_*`, `PLAYER_MAX_BULLETS_ALIVE`) so holding the
@@ -148,6 +156,19 @@ design, not porting:
 - No modal, no help page, no README substituting for in-game teaching. Any
   text on screen must be status (HUD), not instruction.
 
+**HUD — settled:** drop the source's debug state-label line entirely, don't
+repurpose it. Showing a human player their own intent back at them (`AIM`,
+`FIRE`, ...) is dead weight, and unexplained text sitting on screen risks
+being misread as a hint — working against the no-instructions constraint
+even unintentionally. Replace it with HUD lines that matter for a losable,
+winnable game:
+- **Lives remaining** — as simple pips/icons (e.g. three tank-silhouette
+  icons, filled/greyed as they're lost), more legible at a glance during
+  play than a bare number.
+- **Kills / win target** — e.g. `Kills: 4 / 15`.
+- Difficulty % may be kept if useful for QA, but HP and death-count as
+  separate lines are dropped — lives already cover that ground.
+
 ## Win / loss / finish — required by the spec, absent from the source
 
 **This is the largest gap between the source project and this crit's
@@ -160,19 +181,27 @@ no win, nothing that ends play. Spec item 2 requires the opposite: "a wrong
 move must be possible, and play must end (win, loss, or finish)." Porting
 the respawn-forever behavior as-is would fail the spec outright.
 
-**[PROPOSED — confirm before implementation]:**
-- Give the player a small number of **lives** (e.g. 3) instead of infinite
-  respawns. Each hit: explode (keep the source's explosion animation),
-  respawn if lives remain; on the last life, the explosion is final and the
-  game ends in a **loss** screen (e.g. "You were destroyed — Kills: N").
-- No win condition is strictly required by the spec (a loss-only ending
-  already satisfies "must end"), but a **finish/win state** adds the depth
-  the brief asks for — e.g. survive to a fixed elapsed-time/wave milestone,
-  or reach a kill-count target, and the run ends in victory instead. Left
-  unspecified pending user confirmation of a concrete number.
-- Whichever numbers are chosen (lives count, win threshold) must still let a
-  stranger reach *an* ending — win or lose — within five minutes, per spec
-  item 4, so they can't be tuned so high that the run only ever times out.
+**Settled:**
+- **Lives: 3.** Each hit is one life (no partial-HP scaling — a hit is a
+  hit; keeps the source's one-hit-kill feel for both sides). On a hit:
+  explode (keep the source's explosion animation), respawn (source's
+  fresh-ground respawn-point logic) if lives remain. On the third hit, the
+  explosion is final and the game ends in a **loss** screen (e.g. "You were
+  destroyed — Kills: N").
+- **Win condition: reach 15 kills** before running out of lives → **victory**
+  screen (e.g. "Battalion cleared — Kills: 15"). Kills are already tracked
+  (`score` in the source's main loop) so this only needs a threshold check,
+  not new state.
+- **Both numbers are initial, not final** — they're deliberately the kind of
+  thing that only actual play reveals ("3 lives felt cheap because the AI
+  sprays blindly through walls" / "15 kills took 9 minutes, not 5"). Tune
+  them from a real playtest and record that tuning as the spec-item-5
+  playtesting-driven change in `CRIT_QA_NOTES.md` — don't just pick numbers
+  once and leave them unexamined.
+- A stranger must still be able to reach *some* ending — win or lose —
+  within five minutes (spec item 4). If early playtesting shows 15 kills
+  routinely takes longer than that even for a competent stranger, lower it
+  rather than leaving both a slow win and a hard-to-reach loss.
 
 ## Technical direction
 
@@ -200,7 +229,10 @@ the respawn-forever behavior as-is would fail the spec outright.
       rendering and wall-bounce physics, explosion animation — ported to
       match the source project's visual design.
 - [ ] Player control: direction-key turn/hold-to-drive/release-to-stop
-      exactly as specified above; manual fire on left-click or `F`.
+      exactly as specified above, on both arrow keys and WASD; manual fire
+      on left-click or spacebar.
+- [ ] HUD: lives (pips/icons) + kills-toward-win-target; no debug state
+      label, no separate HP/death lines.
 - [ ] Enemy AI: LOS check, direct-fire-in-range behavior, A* chase when out
       of sight, wall-bounced blind fire, spawn placement — ported to match
       the source's `EnemyTank`/`Spawner`/`pathfinding` behavior.
@@ -208,9 +240,10 @@ the respawn-forever behavior as-is would fail the spec outright.
       the difficulty curve.
 - [ ] Opening screen makes the first move obvious with zero on-screen or
       off-screen instructions (see affordance plan above).
-- [ ] A finite lives/loss (and optionally win) system replacing the source's
-      infinite-respawn demo loop, tuned so a stranger reaches an ending
-      within five minutes.
+- [ ] A finite lives/loss/win system replacing the source's infinite-respawn
+      demo loop: 3 lives, loss on the third hit, win at 15 kills — tuned so
+      a stranger reaches an ending within five minutes (numbers subject to
+      playtest-driven adjustment).
 - [ ] One game rule under a focused automated test (candidate: bullet
       wall-reflection, or the turn-before-move drive-model constraint, or
       the ≤7-enemies cap) — see `spec/` conventions in root `CLAUDE.md`.
@@ -220,17 +253,19 @@ the respawn-forever behavior as-is would fail the spec outright.
 ## Decisions requiring confirmation
 
 1. ~~Fire control~~ — **resolved:** manual fire only, on left mouse click or
-   the `F` key; no automatic firing. One remaining sub-question: edge-triggered
+   spacebar; no automatic firing. One remaining sub-question: edge-triggered
    (one shot per press) vs. cooldown-gated-while-held — default to
    edge-triggered unless playtesting says otherwise.
-2. **Lives count** and whether a hit costs a life immediately or whether HP
-   >1 per life is wanted (source's `PLAYER_MAX_HP = 5` field exists but was
-   never actually decremented in the source — it was inert).
-3. **Win/finish condition**, if any is wanted beyond "loss ends the game"
-   (e.g. survive N seconds, or reach a kill-count target) — and its exact
-   number, so five-minute completability can be checked against it.
-4. **Key scheme** — arrow keys, WASD, or both — and whether the state-label
-   HUD line from the source (`state: EXPLORE/AIM/FIRE/...`) should be
-   dropped entirely or repurposed for the human player (e.g. showing
-   lives/wave instead), since its original meaning no longer applies once
-   the player isn't an FSM.
+2. ~~Lives count~~ — **resolved:** 3 lives, one hit each (see "Win / loss /
+   finish" above). `PLAYER_MAX_HP` from the source is not ported — a hit is
+   a hit, no partial-HP scaling.
+3. ~~Win/finish condition~~ — **resolved:** 15 kills = victory. Both this
+   and the lives count are flagged as initial numbers to tune from real
+   play, not final.
+4. ~~Key scheme~~ — **resolved:** both arrow keys and WASD, mapped to the
+   same four turn intents.
+5. ~~HUD state-label line~~ — **resolved:** dropped. HUD becomes lives
+   (pips/icons) + kills-toward-win-target, difficulty % optional; HP and
+   death-count lines are not ported.
+
+All open decisions from this section are now resolved.
