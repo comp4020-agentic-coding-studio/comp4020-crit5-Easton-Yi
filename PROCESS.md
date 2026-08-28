@@ -1,5 +1,9 @@
 # Process overview
 
+## Deployed game url:
+
+https://comp4020-agentic-coding-studio.github.io/comp4020-crit5-Easton-Yi/
+
 ## What I built
 
 **Maze Standoff**, a top-down maze tank game: the player steers a tank with
