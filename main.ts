@@ -1,4 +1,12 @@
-// The TypeScript entry point, loaded as a module by index.html. Vite compiles
-// it; `pnpm typecheck` type-checks it. If the week's spec rules out
-// JavaScript, delete this file and the script tag that loads it.
-export {};
+import { Game, type HudRefs } from "./game/game.ts";
+
+const canvas = document.getElementById("game") as HTMLCanvasElement;
+const hud: HudRefs = {
+  livesEl: document.getElementById("lives")!,
+  killsEl: document.getElementById("kills")!,
+  endScreenEl: document.getElementById("endScreen")!,
+  endMessageEl: document.getElementById("endMessage")!,
+};
+
+const game = new Game(canvas, hud);
+game.start();
